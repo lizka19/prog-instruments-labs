@@ -26,6 +26,35 @@ class DisplayConstants:
     LINE_WIDTH = 3
 
 
+class ColorManager:
+    def __init__(self):
+        self.available_colors = ['red', 'blue', 'black', 'green']
+
+    def add_color(self, color):
+        """Добавляет новый цвет в доступную палитру"""
+        if color not in self.available_colors:
+            self.available_colors.append(color)
+            return True
+        return False
+
+    def remove_color(self, color):
+        """Удаляет цвет из доступной палитры"""
+        if color in self.available_colors and len(self.available_colors) > 1:
+            self.available_colors.remove(color)
+            return True
+        return False
+
+    def get_colors(self):
+        """Возвращает список доступных цветов"""
+        return self.available_colors.copy()
+
+    def get_color_by_index(self, index):
+        """Возвращает цвет по индексу"""
+        if 0 <= index < len(self.available_colors):
+            return self.available_colors[index]
+        return self.available_colors[0]  # fallback color
+
+
 class TrajectoryCalculator:
     def __init__(self, start_speed):
         self.v_0 = start_speed
@@ -56,7 +85,7 @@ class TrajectoryCalculator:
         while iteration_count < max_iterations:
             x = (self.v_0 * math.cos(a_angle) * t)
             y = -(x * math.tan(a_angle) - x ** 2 * (
-                        PhysicsConstants.GRAVITY / (2 * self.v_0 ** 2 * math.cos(a_angle) ** 2)))
+                    PhysicsConstants.GRAVITY / (2 * self.v_0 ** 2 * math.cos(a_angle) ** 2)))
             coords.append((x, y))
             t += PhysicsConstants.TIME_STEP
             iteration_count += 1
@@ -208,22 +237,26 @@ def check_position(x, y, width, height):
         return False
 
 
-colors = ['red', 'blue', 'black', 'green']
+# Создаем менеджер цветов вместо жестко заданного списка
+color_manager = ColorManager()
+colors = color_manager.get_colors()
 
 
 class Menu:
-    def __init__(self, pos, list, width, height):
-
+    def __init__(self, pos, color_manager, width, height):
         self.x = pos[0]
         self.width = width
         self.height = height
         self.y = pos[1]
-        self.variables = list
+        self.color_manager = color_manager
+        self.variables = color_manager.get_colors()
         self.opened = False
         self.flag = True
         self.choice = 0
 
     def menu(self):
+        # Обновляем список цветов на случай изменений
+        self.variables = self.color_manager.get_colors()
 
         if (not self.opened) and check_position(self.x, self.y, self.width, self.height) \
                 and pygame.mouse.get_pressed()[0]:
@@ -242,6 +275,8 @@ class Menu:
                         self.choice = number
 
     def draw(self, screen):
+        # Обновляем список цветов на случай изменений
+        self.variables = self.color_manager.get_colors()
 
         if self.opened is False:
             pygame.draw.rect(screen, interface, (self.x, self.y, self.width, self.height))
@@ -311,15 +346,22 @@ class Slider:
         pygame.draw.rect(screen, 'white', ((self.s_x, self.s_y), (self.s_width, self.s_height)))
 
 
+# Создаем графики с использованием менеджера цветов
 angle_slider = Slider([50, DisplayConstants.AXIS_OFFSET], 700, (math.pi / 2), 0, 0)
 graphics = []
-for color in colors:
-    graphics.append(Graphic((DisplayConstants.AXIS_OFFSET, 780), int(input('Введите начальную скорость')), 0.5, color))
+for color in color_manager.get_colors():
+    graphics.append(Graphic((DisplayConstants.AXIS_OFFSET, 780), int(input('Введите начальную скорость')), color))
 scale_slider = Slider([50, 50], 700, 1000, 1500, 1)
-color_menu = Menu((700, 200), colors, 250, 40)
+color_menu = Menu((700, 200), color_manager, 250, 40)
 
 scale = 800
 scale = scale_slider.slide(scale)
+
+# Демонстрация расширяемости - можно легко добавить новые цвета
+color_manager.add_color('purple')
+color_manager.add_color('orange')
+color_manager.add_color('brown')
+
 while True:
 
     screen.fill(fon)
