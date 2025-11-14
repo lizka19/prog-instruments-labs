@@ -14,6 +14,18 @@ interface = (171, 205, 239)
 text_color = (153, 102, 102)
 
 
+class PhysicsConstants:
+    GRAVITY = 9.8
+    TIME_STEP = 0.0001
+    MAX_TIME = 10.0  # Защита от бесконечного цикла
+
+
+class DisplayConstants:
+    SERIF_SPACING = 30
+    AXIS_OFFSET = 20
+    LINE_WIDTH = 3
+
+
 def check_position(x, y, width, height):
     cursor_x = pygame.mouse.get_pos()[0]
     cursor_y = pygame.mouse.get_pos()[1]
@@ -93,19 +105,19 @@ class Graphic:
 
         self.coords = []
         t = 0
-        self.s = self.v_0 ** 2 * math.sin(2 * a_angle) / 9.8
+        self.s = self.v_0 ** 2 * math.sin(2 * a_angle) / PhysicsConstants.GRAVITY
         print('s =', self.s)
-        self.h = self.v_0 ** 2 * math.sin(a_angle) ** 2 / (2 * 9.8)
+        self.h = self.v_0 ** 2 * math.sin(a_angle) ** 2 / (2 * PhysicsConstants.GRAVITY)
         print('h =', self.h)
         self.a_angle = a_angle
 
         while True:
 
             self.x = (self.v_0 * math.cos(a_angle) * t)
-            self.y = -(self.x * math.tan(a_angle) - self.x ** 2 * (9.8 / (2 * self.v_0 ** 2 * math.cos(a_angle) ** 2)))
+            self.y = -(self.x * math.tan(a_angle) - self.x ** 2 * (PhysicsConstants.GRAVITY / (2 * self.v_0 ** 2 * math.cos(a_angle) ** 2)))
             self.x = self.x
             self.coords.append((self.x, self.y))
-            t += 0.0001
+            t += PhysicsConstants.TIME_STEP
 
             if self.y + self.start_y > self.start_y + 0.001:
                 break
@@ -115,14 +127,14 @@ class Graphic:
             pygame.draw.line(screen, self.color,
                              (self.coords[num][0] * scale + self.start_x, self.coords[num][1] * scale + self.start_y),
                              (self.coords[num + 1][0] * scale + self.start_x,
-                              self.coords[num + 1][1] * scale + self.start_y), 3)
+                              self.coords[num + 1][1] * scale + self.start_y), DisplayConstants.LINE_WIDTH)
 
-        for serif, text in zip(range(self.start_y, 200, -30), range(0, self.start_y, 30)):
+        for serif, text in zip(range(self.start_y, 200, -DisplayConstants.SERIF_SPACING), range(0, self.start_y, DisplayConstants.SERIF_SPACING)):
             pygame.draw.line(screen, 'blue', (self.start_x - 2, serif), (self.start_x + 2, serif))
             text = text_preset_mini.render('{:<03.2f}'.format(text / scale), True, 'black')
-            screen.blit(text, (self.start_x - 20, serif))
+            screen.blit(text, (self.start_x - DisplayConstants.AXIS_OFFSET, serif))
 
-        for serif_1, text_1 in zip(range(self.start_x, 800, 30), range(0, self.start_x + 1000, 30)):
+        for serif_1, text_1 in zip(range(self.start_x, 800, DisplayConstants.SERIF_SPACING), range(0, self.start_x + 1000, DisplayConstants.SERIF_SPACING)):
             text_1 = text_preset_mini.render('{:<03.2f}'.format(text_1 / scale), True, 'black')
             screen.blit(text_1, (serif_1, self.start_y + 10))
             pygame.draw.line(screen, 'blue', (serif_1, self.start_y - 2), (serif_1, self.start_y + 2))
@@ -136,12 +148,12 @@ class Graphic:
         pygame.draw.line(screen, 'blue', (self.start_x, self.start_y), (800, self.start_y))
 
         pygame.draw.line(screen, self.color, (self.start_x - 2, -self.h * scale + self.start_y),
-                         (self.start_x + 2, -self.h * scale + self.start_y), 3)
+                         (self.start_x + 2, -self.h * scale + self.start_y), DisplayConstants.LINE_WIDTH)
         text = text_preset_mini.render(str(round(self.h, 2)), True, self.color)
         screen.blit(text, (self.start_x + 10, -self.h * scale + self.start_y))
 
         pygame.draw.line(screen, self.color, (self.s * scale + self.start_x, self.start_y - 2),
-                         (self.s * scale + self.start_x, self.start_y + 2), 3)
+                         (self.s * scale + self.start_x, self.start_y + 2), DisplayConstants.LINE_WIDTH)
         text = text_preset_mini.render(str(round(self.s, 2)), True, self.color)
         screen.blit(text, (self.s * scale + self.start_x, self.start_y - 15))
 
@@ -156,7 +168,7 @@ class Slider:
         self.current_value = self.minimal_value
         self.lenght = lenght
         self.s_height = 21
-        self.s_width = 20
+        self.s_width = DisplayConstants.AXIS_OFFSET
         self.s_x = self.x + 0
         self.s_y = self.y - self.s_height // 2
         self.flag = False
@@ -195,14 +207,14 @@ class Slider:
         return self.value
 
     def draw(self, screen):
-        pygame.draw.line(screen, 'black', (self.x, self.y), (self.x + self.lenght, self.y), 3)
+        pygame.draw.line(screen, 'black', (self.x, self.y), (self.x + self.lenght, self.y), DisplayConstants.LINE_WIDTH)
         pygame.draw.rect(screen, 'white', ((self.s_x, self.s_y), (self.s_width, self.s_height)))
 
 
-angle_slider = Slider([50, 20], 700, (math.pi / 2), 0, 0)
+angle_slider = Slider([50, DisplayConstants.AXIS_OFFSET], 700, (math.pi / 2), 0, 0)
 graphics = []
 for color in colors:
-    graphics.append(Graphic((20, 780), int(input('Введите начальную скорость')), 0.5, color))
+    graphics.append(Graphic((DisplayConstants.AXIS_OFFSET, 780), int(input('Введите начальную скорость')), 0.5, color))
 scale_slider = Slider([50, 50], 700, 1000, 1500, 1)
 menushka = Menu((700, 200), colors, 250, 40)
 
