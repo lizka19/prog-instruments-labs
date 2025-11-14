@@ -83,14 +83,19 @@ class CoordinateSystem:
         pygame.draw.line(screen, 'blue', (self.start_x, self.start_y), (800, self.start_y))
 
     def draw_scale_marks(self, screen, scale):
-        # Вертикальные метки (ось Y)
+        self._draw_vertical_scale_marks(screen, scale)
+        self._draw_horizontal_scale_marks(screen, scale)
+
+    def _draw_vertical_scale_marks(self, screen, scale):
+        """Отрисовка вертикальных меток (ось Y)"""
         for serif, text_value in zip(range(self.start_y, 200, -DisplayConstants.SERIF_SPACING),
                                      range(0, self.start_y, DisplayConstants.SERIF_SPACING)):
             pygame.draw.line(screen, 'blue', (self.start_x - 2, serif), (self.start_x + 2, serif))
             text = text_preset_mini.render('{:<03.2f}'.format(text_value / scale), True, 'black')
             screen.blit(text, (self.start_x - DisplayConstants.AXIS_OFFSET, serif))
 
-        # Горизонтальные метки (ось X)
+    def _draw_horizontal_scale_marks(self, screen, scale):
+        """Отрисовка горизонтальных меток (ось X)"""
         for serif, text_value in zip(range(self.start_x, 800, DisplayConstants.SERIF_SPACING),
                                      range(0, self.start_x + 1000, DisplayConstants.SERIF_SPACING)):
             text = text_preset_mini.render('{:<03.2f}'.format(text_value / scale), True, 'black')
@@ -109,29 +114,48 @@ class TrajectoryRenderer:
             return  # Защита от пустых данных
 
         for num in range(len(coords) - 1):
-            pygame.draw.line(screen, self.color,
-                             (coords[num][0] * scale + self.start_x, coords[num][1] * scale + self.start_y),
-                             (coords[num + 1][0] * scale + self.start_x,
-                              coords[num + 1][1] * scale + self.start_y), DisplayConstants.LINE_WIDTH)
+            start_point = self._scale_point(coords[num], scale)
+            end_point = self._scale_point(coords[num + 1], scale)
+            pygame.draw.line(screen, self.color, start_point, end_point, DisplayConstants.LINE_WIDTH)
+
+    def _scale_point(self, point, scale):
+        """Масштабирует точку согласно текущему масштабу"""
+        return (point[0] * scale + self.start_x, point[1] * scale + self.start_y)
 
     def draw_metrics(self, screen, scale, main_stats, s, h):
-        # Отображение основных метрик
-        text = text_preset.render(str('{:0<1.2f}'.format(s)), True, self.color)
-        screen.blit(text, main_stats)
-        text = text_preset.render(str('{:0<1.2f}'.format(h)), True, self.color)
-        screen.blit(text, (main_stats[0], main_stats[1] + 50))
+        self._draw_main_metrics(screen, main_stats, s, h)
+        self._draw_height_marker(screen, scale, h)
+        self._draw_distance_marker(screen, scale, s)
 
-        # Отображение высоты на графике
-        pygame.draw.line(screen, self.color, (self.start_x - 2, -h * scale + self.start_y),
-                         (self.start_x + 2, -h * scale + self.start_y), DisplayConstants.LINE_WIDTH)
-        text = text_preset_mini.render(str(round(h, 2)), True, self.color)
-        screen.blit(text, (self.start_x + 10, -h * scale + self.start_y))
+    def _draw_main_metrics(self, screen, main_stats, s, h):
+        """Отрисовка основных числовых метрик"""
+        s_text = text_preset.render(str('{:0<1.2f}'.format(s)), True, self.color)
+        screen.blit(s_text, main_stats)
 
-        # Отображение дальности на графике
-        pygame.draw.line(screen, self.color, (s * scale + self.start_x, self.start_y - 2),
-                         (s * scale + self.start_x, self.start_y + 2), DisplayConstants.LINE_WIDTH)
-        text = text_preset_mini.render(str(round(s, 2)), True, self.color)
-        screen.blit(text, (s * scale + self.start_x, self.start_y - 15))
+        h_text = text_preset.render(str('{:0<1.2f}'.format(h)), True, self.color)
+        screen.blit(h_text, (main_stats[0], main_stats[1] + 50))
+
+    def _draw_height_marker(self, screen, scale, h):
+        """Отрисовка маркера высоты на графике"""
+        height_y = -h * scale + self.start_y
+        pygame.draw.line(screen, self.color,
+                         (self.start_x - 2, height_y),
+                         (self.start_x + 2, height_y),
+                         DisplayConstants.LINE_WIDTH)
+
+        height_text = text_preset_mini.render(str(round(h, 2)), True, self.color)
+        screen.blit(height_text, (self.start_x + 10, height_y))
+
+    def _draw_distance_marker(self, screen, scale, s):
+        """Отрисовка маркера дальности на графике"""
+        distance_x = s * scale + self.start_x
+        pygame.draw.line(screen, self.color,
+                         (distance_x, self.start_y - 2),
+                         (distance_x, self.start_y + 2),
+                         DisplayConstants.LINE_WIDTH)
+
+        distance_text = text_preset_mini.render(str(round(s, 2)), True, self.color)
+        screen.blit(distance_text, (distance_x, self.start_y - 15))
 
 
 class Graphic:
@@ -153,16 +177,25 @@ class Graphic:
             return False  # Ошибка выполнения
 
     def draw(self, screen, scale, main_stats):
-        # Отрисовка траектории (только если есть данные)
+        """Отрисовка всех компонентов графика"""
+        self._draw_trajectory_component(screen, scale)
+        self._draw_coordinate_system(screen, scale)
+        self._draw_metrics_component(screen, scale, main_stats)
+
+    def _draw_trajectory_component(self, screen, scale):
+        """Отрисовка траектории"""
         if self.calculator.coords:
             self.renderer.draw_trajectory(screen, self.calculator.coords, scale)
 
-        # Отрисовка системы координат
+    def _draw_coordinate_system(self, screen, scale):
+        """Отрисовка системы координат"""
         self.coord_system.draw_axes(screen)
         self.coord_system.draw_scale_marks(screen, scale)
 
-        # Отрисовка метрик
-        self.renderer.draw_metrics(screen, scale, main_stats, self.calculator.s, self.calculator.h)
+    def _draw_metrics_component(self, screen, scale, main_stats):
+        """Отрисовка метрик"""
+        self.renderer.draw_metrics(screen, scale, main_stats,
+                                   self.calculator.s, self.calculator.h)
 
 
 def check_position(x, y, width, height):
