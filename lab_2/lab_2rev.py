@@ -26,6 +26,117 @@ class DisplayConstants:
     LINE_WIDTH = 3
 
 
+class TrajectoryCalculator:
+    def __init__(self, start_speed):
+        self.v_0 = start_speed
+        self.coords = []
+        self.s = 0
+        self.h = 0
+        self.a_angle = None
+
+    def calculate_trajectory(self, a_angle):
+        self.coords = []
+        t = 0
+        self.s = self.v_0 ** 2 * math.sin(2 * a_angle) / PhysicsConstants.GRAVITY
+        print('s =', self.s)
+        self.h = self.v_0 ** 2 * math.sin(a_angle) ** 2 / (2 * PhysicsConstants.GRAVITY)
+        print('h =', self.h)
+        self.a_angle = a_angle
+
+        while True:
+            x = (self.v_0 * math.cos(a_angle) * t)
+            y = -(x * math.tan(a_angle) - x ** 2 * (
+                        PhysicsConstants.GRAVITY / (2 * self.v_0 ** 2 * math.cos(a_angle) ** 2)))
+            self.coords.append((x, y))
+            t += PhysicsConstants.TIME_STEP
+
+            if y > 0.001:  # Упрощенное условие выхода
+                break
+
+        return self.coords, self.s, self.h
+
+
+class CoordinateSystem:
+    def __init__(self, start_x, start_y):
+        self.start_x = start_x
+        self.start_y = start_y
+
+    def draw_axes(self, screen):
+        pygame.draw.line(screen, 'blue', (self.start_x, self.start_y), (self.start_x, 200))
+        pygame.draw.line(screen, 'blue', (self.start_x, self.start_y), (800, self.start_y))
+
+    def draw_scale_marks(self, screen, scale):
+        # Вертикальные метки (ось Y)
+        for serif, text_value in zip(range(self.start_y, 200, -DisplayConstants.SERIF_SPACING),
+                                     range(0, self.start_y, DisplayConstants.SERIF_SPACING)):
+            pygame.draw.line(screen, 'blue', (self.start_x - 2, serif), (self.start_x + 2, serif))
+            text = text_preset_mini.render('{:<03.2f}'.format(text_value / scale), True, 'black')
+            screen.blit(text, (self.start_x - DisplayConstants.AXIS_OFFSET, serif))
+
+        # Горизонтальные метки (ось X)
+        for serif, text_value in zip(range(self.start_x, 800, DisplayConstants.SERIF_SPACING),
+                                     range(0, self.start_x + 1000, DisplayConstants.SERIF_SPACING)):
+            text = text_preset_mini.render('{:<03.2f}'.format(text_value / scale), True, 'black')
+            screen.blit(text, (serif, self.start_y + 10))
+            pygame.draw.line(screen, 'blue', (serif, self.start_y - 2), (serif, self.start_y + 2))
+
+
+class TrajectoryRenderer:
+    def __init__(self, start_pos, color):
+        self.start_x = start_pos[0]
+        self.start_y = start_pos[1]
+        self.color = color
+
+    def draw_trajectory(self, screen, coords, scale):
+        for num in range(len(coords) - 1):
+            pygame.draw.line(screen, self.color,
+                             (coords[num][0] * scale + self.start_x, coords[num][1] * scale + self.start_y),
+                             (coords[num + 1][0] * scale + self.start_x,
+                              coords[num + 1][1] * scale + self.start_y), DisplayConstants.LINE_WIDTH)
+
+    def draw_metrics(self, screen, scale, main_stats, s, h):
+        # Отображение основных метрик
+        text = text_preset.render(str('{:0<1.2f}'.format(s)), True, self.color)
+        screen.blit(text, main_stats)
+        text = text_preset.render(str('{:0<1.2f}'.format(h)), True, self.color)
+        screen.blit(text, (main_stats[0], main_stats[1] + 50))
+
+        # Отображение высоты на графике
+        pygame.draw.line(screen, self.color, (self.start_x - 2, -h * scale + self.start_y),
+                         (self.start_x + 2, -h * scale + self.start_y), DisplayConstants.LINE_WIDTH)
+        text = text_preset_mini.render(str(round(h, 2)), True, self.color)
+        screen.blit(text, (self.start_x + 10, -h * scale + self.start_y))
+
+        # Отображение дальности на графике
+        pygame.draw.line(screen, self.color, (s * scale + self.start_x, self.start_y - 2),
+                         (s * scale + self.start_x, self.start_y + 2), DisplayConstants.LINE_WIDTH)
+        text = text_preset_mini.render(str(round(s, 2)), True, self.color)
+        screen.blit(text, (s * scale + self.start_x, self.start_y - 15))
+
+
+class Graphic:
+    def __init__(self, start_pos, start_speed, time, color):
+        self.calculator = TrajectoryCalculator(start_speed)
+        self.coord_system = CoordinateSystem(start_pos[0], start_pos[1])
+        self.renderer = TrajectoryRenderer(start_pos, color)
+        self.start_x, self.start_y = start_pos
+        self.color = color
+
+    def graphic(self, a_angle):
+        return self.calculator.calculate_trajectory(a_angle)
+
+    def draw(self, screen, scale, main_stats):
+        # Отрисовка траектории
+        self.renderer.draw_trajectory(screen, self.calculator.coords, scale)
+
+        # Отрисовка системы координат
+        self.coord_system.draw_axes(screen)
+        self.coord_system.draw_scale_marks(screen, scale)
+
+        # Отрисовка метрик
+        self.renderer.draw_metrics(screen, scale, main_stats, self.calculator.s, self.calculator.h)
+
+
 def check_position(x, y, width, height):
     cursor_x = pygame.mouse.get_pos()[0]
     cursor_y = pygame.mouse.get_pos()[1]
@@ -84,78 +195,6 @@ class Menu:
                 pygame.draw.rect(screen, choice, (stroke[0] + 200, stroke[1] + 10, 22, 22))
                 text = text_preset.render(choice.capitalize(), True, choice)
                 screen.blit(text, (self.x + 12, stroke[1] + 5))
-
-
-class Graphic:
-
-    def __init__(self, start_pos, start_speed, time, color):
-
-        self.start_x = start_pos[0]
-        self.start_y = start_pos[1]
-        self.x = 0
-        self.y = 0
-        self.v_0 = start_speed
-        self.coords = []
-        self.color = color
-        self.a_angle = None
-        self.s = 0
-        self.h = 0
-
-    def graphic(self, a_angle):
-
-        self.coords = []
-        t = 0
-        self.s = self.v_0 ** 2 * math.sin(2 * a_angle) / PhysicsConstants.GRAVITY
-        print('s =', self.s)
-        self.h = self.v_0 ** 2 * math.sin(a_angle) ** 2 / (2 * PhysicsConstants.GRAVITY)
-        print('h =', self.h)
-        self.a_angle = a_angle
-
-        while True:
-
-            self.x = (self.v_0 * math.cos(a_angle) * t)
-            self.y = -(self.x * math.tan(a_angle) - self.x ** 2 * (PhysicsConstants.GRAVITY / (2 * self.v_0 ** 2 * math.cos(a_angle) ** 2)))
-            self.x = self.x
-            self.coords.append((self.x, self.y))
-            t += PhysicsConstants.TIME_STEP
-
-            if self.y + self.start_y > self.start_y + 0.001:
-                break
-
-    def draw(self, screen, scale, main_stats):
-        for num in range(len(self.coords) - 1):
-            pygame.draw.line(screen, self.color,
-                             (self.coords[num][0] * scale + self.start_x, self.coords[num][1] * scale + self.start_y),
-                             (self.coords[num + 1][0] * scale + self.start_x,
-                              self.coords[num + 1][1] * scale + self.start_y), DisplayConstants.LINE_WIDTH)
-
-        for serif, text in zip(range(self.start_y, 200, -DisplayConstants.SERIF_SPACING), range(0, self.start_y, DisplayConstants.SERIF_SPACING)):
-            pygame.draw.line(screen, 'blue', (self.start_x - 2, serif), (self.start_x + 2, serif))
-            text = text_preset_mini.render('{:<03.2f}'.format(text / scale), True, 'black')
-            screen.blit(text, (self.start_x - DisplayConstants.AXIS_OFFSET, serif))
-
-        for serif_1, text_1 in zip(range(self.start_x, 800, DisplayConstants.SERIF_SPACING), range(0, self.start_x + 1000, DisplayConstants.SERIF_SPACING)):
-            text_1 = text_preset_mini.render('{:<03.2f}'.format(text_1 / scale), True, 'black')
-            screen.blit(text_1, (serif_1, self.start_y + 10))
-            pygame.draw.line(screen, 'blue', (serif_1, self.start_y - 2), (serif_1, self.start_y + 2))
-
-        text = text_preset.render(str('{:0<1.2f}'.format(self.s)), True, self.color)
-        screen.blit(text, main_stats)
-        text = text_preset.render(str('{:0<1.2f}'.format(self.h)), True, self.color)
-        screen.blit(text, (main_stats[0], main_stats[1] + 50))
-
-        pygame.draw.line(screen, 'blue', (self.start_x, self.start_y), (self.start_x, 200))
-        pygame.draw.line(screen, 'blue', (self.start_x, self.start_y), (800, self.start_y))
-
-        pygame.draw.line(screen, self.color, (self.start_x - 2, -self.h * scale + self.start_y),
-                         (self.start_x + 2, -self.h * scale + self.start_y), DisplayConstants.LINE_WIDTH)
-        text = text_preset_mini.render(str(round(self.h, 2)), True, self.color)
-        screen.blit(text, (self.start_x + 10, -self.h * scale + self.start_y))
-
-        pygame.draw.line(screen, self.color, (self.s * scale + self.start_x, self.start_y - 2),
-                         (self.s * scale + self.start_x, self.start_y + 2), DisplayConstants.LINE_WIDTH)
-        text = text_preset_mini.render(str(round(self.s, 2)), True, self.color)
-        screen.blit(text, (self.s * scale + self.start_x, self.start_y - 15))
 
 
 class Slider:
@@ -228,7 +267,7 @@ while True:
     scale = scale_slider.slide()
     scale_slider.draw(screen)
     scale = scale_slider.slide()
-    a_angle = angle_slider.slide(graphics[choice].a_angle)
+    a_angle = angle_slider.slide(graphics[choice].calculator.a_angle)
     print('angle =', a_angle)
     graphics[choice].graphic(a_angle)
 
