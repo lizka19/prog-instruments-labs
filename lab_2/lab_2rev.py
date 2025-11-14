@@ -316,15 +316,15 @@ graphics = []
 for color in colors:
     graphics.append(Graphic((DisplayConstants.AXIS_OFFSET, 780), int(input('Введите начальную скорость')), 0.5, color))
 scale_slider = Slider([50, 50], 700, 1000, 1500, 1)
-menushka = Menu((700, 200), colors, 250, 40)
+color_menu = Menu((700, 200), colors, 250, 40)
 
 scale = 800
 scale = scale_slider.slide(scale)
 while True:
 
     screen.fill(fon)
-    menushka.menu()
-    choice = menushka.choice
+    color_menu.menu()
+    choice = color_menu.choice
     scale = scale_slider.slide()
     scale_slider.draw(screen)
     scale = scale_slider.slide()
@@ -336,7 +336,7 @@ while True:
     if not success:
         print("Не удалось рассчитать траекторию")
 
-    menushka.draw(screen)
+    color_menu.draw(screen)
 
     for graphic_p, main_stats in zip(graphics, range(200, 1000, 100)):
         graphic_p.draw(screen, scale, (main_stats, 200))
