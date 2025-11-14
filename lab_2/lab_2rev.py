@@ -35,25 +35,42 @@ class TrajectoryCalculator:
         self.a_angle = None
 
     def calculate_trajectory(self, a_angle):
-        self.coords = []
-        t = 0
-        self.s = self.v_0 ** 2 * math.sin(2 * a_angle) / PhysicsConstants.GRAVITY
-        print('s =', self.s)
-        self.h = self.v_0 ** 2 * math.sin(a_angle) ** 2 / (2 * PhysicsConstants.GRAVITY)
-        print('h =', self.h)
-        self.a_angle = a_angle
+        """Рассчитывает траекторию для заданного угла.
+        Возвращает кортеж (координаты, дальность, высота)
+        Является идемпотентной функцией - при одинаковых входных данных возвращает одинаковый результат"""
+        if not (0 <= a_angle <= math.pi / 2):
+            raise ValueError("Angle must be between 0 and π/2")
 
-        while True:
+        return self._calculate_physics(a_angle)
+
+    def _calculate_physics(self, a_angle):
+        """Чистая функция вычислений траектории"""
+        coords = []
+        t = 0
+        s = self.v_0 ** 2 * math.sin(2 * a_angle) / PhysicsConstants.GRAVITY
+        h = self.v_0 ** 2 * math.sin(a_angle) ** 2 / (2 * PhysicsConstants.GRAVITY)
+
+        iteration_count = 0
+        max_iterations = int(PhysicsConstants.MAX_TIME / PhysicsConstants.TIME_STEP)
+
+        while iteration_count < max_iterations:
             x = (self.v_0 * math.cos(a_angle) * t)
             y = -(x * math.tan(a_angle) - x ** 2 * (
                         PhysicsConstants.GRAVITY / (2 * self.v_0 ** 2 * math.cos(a_angle) ** 2)))
-            self.coords.append((x, y))
+            coords.append((x, y))
             t += PhysicsConstants.TIME_STEP
+            iteration_count += 1
 
             if y > 0.001:  # Упрощенное условие выхода
                 break
 
-        return self.coords, self.s, self.h
+        # Обновляем состояние только после успешного расчета
+        self.coords = coords
+        self.s = s
+        self.h = h
+        self.a_angle = a_angle
+
+        return coords, s, h
 
 
 class CoordinateSystem:
@@ -88,6 +105,9 @@ class TrajectoryRenderer:
         self.color = color
 
     def draw_trajectory(self, screen, coords, scale):
+        if not coords:
+            return  # Защита от пустых данных
+
         for num in range(len(coords) - 1):
             pygame.draw.line(screen, self.color,
                              (coords[num][0] * scale + self.start_x, coords[num][1] * scale + self.start_y),
@@ -122,12 +142,20 @@ class Graphic:
         self.start_x, self.start_y = start_pos
         self.color = color
 
-    def graphic(self, a_angle):
-        return self.calculator.calculate_trajectory(a_angle)
+    def calculate_and_update_trajectory(self, a_angle):
+        """Рассчитывает и обновляет траекторию.
+        Является предсказуемой - всегда возвращает одинаковый результат для одинаковых входных данных"""
+        try:
+            coords, s, h = self.calculator.calculate_trajectory(a_angle)
+            return True  # Успешное выполнение
+        except ValueError as e:
+            print(f"Ошибка расчета траектории: {e}")
+            return False  # Ошибка выполнения
 
     def draw(self, screen, scale, main_stats):
-        # Отрисовка траектории
-        self.renderer.draw_trajectory(screen, self.calculator.coords, scale)
+        # Отрисовка траектории (только если есть данные)
+        if self.calculator.coords:
+            self.renderer.draw_trajectory(screen, self.calculator.coords, scale)
 
         # Отрисовка системы координат
         self.coord_system.draw_axes(screen)
@@ -269,7 +297,11 @@ while True:
     scale = scale_slider.slide()
     a_angle = angle_slider.slide(graphics[choice].calculator.a_angle)
     print('angle =', a_angle)
-    graphics[choice].graphic(a_angle)
+
+    # Используем новый предсказуемый метод
+    success = graphics[choice].calculate_and_update_trajectory(a_angle)
+    if not success:
+        print("Не удалось рассчитать траекторию")
 
     menushka.draw(screen)
 
