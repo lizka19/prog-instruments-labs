@@ -66,7 +66,8 @@ class TrajectoryCalculator:
     def calculate_trajectory(self, a_angle):
         """Рассчитывает траекторию для заданного угла.
         Возвращает кортеж (координаты, дальность, высота)
-        Является идемпотентной функцией - при одинаковых входных данных возвращает одинаковый результат"""
+        Является идемпотентной функцией - при одинаковых
+         входных данных возвращает одинаковый результат"""
         if not (0 <= a_angle <= math.pi / 2):
             raise ValueError("Angle must be between 0 and π/2")
 
@@ -76,16 +77,20 @@ class TrajectoryCalculator:
         """Чистая функция вычислений траектории"""
         coords = []
         t = 0
-        s = self.v_0 ** 2 * math.sin(2 * a_angle) / PhysicsConstants.GRAVITY
-        h = self.v_0 ** 2 * math.sin(a_angle) ** 2 / (2 * PhysicsConstants.GRAVITY)
+        s = (self.v_0 ** 2 * math.sin(2 * a_angle) /
+             PhysicsConstants.GRAVITY)
+        h = (self.v_0 ** 2 * math.sin(a_angle) ** 2 /
+             (2 * PhysicsConstants.GRAVITY))
 
         iteration_count = 0
-        max_iterations = int(PhysicsConstants.MAX_TIME / PhysicsConstants.TIME_STEP)
+        max_iterations = int(PhysicsConstants.MAX_TIME /
+                             PhysicsConstants.TIME_STEP)
 
         while iteration_count < max_iterations:
             x = (self.v_0 * math.cos(a_angle) * t)
             y = -(x * math.tan(a_angle) - x ** 2 * (
-                    PhysicsConstants.GRAVITY / (2 * self.v_0 ** 2 * math.cos(a_angle) ** 2)))
+                    PhysicsConstants.GRAVITY /
+                    (2 * self.v_0 ** 2 * math.cos(a_angle) ** 2)))
             coords.append((x, y))
             t += PhysicsConstants.TIME_STEP
             iteration_count += 1
@@ -108,8 +113,10 @@ class CoordinateSystem:
         self.start_y = start_y
 
     def draw_axes(self, screen):
-        pygame.draw.line(screen, 'blue', (self.start_x, self.start_y), (self.start_x, 200))
-        pygame.draw.line(screen, 'blue', (self.start_x, self.start_y), (800, self.start_y))
+        pygame.draw.line(screen, 'blue', (
+            self.start_x, self.start_y), (self.start_x, 200))
+        pygame.draw.line(screen, 'blue', (
+            self.start_x, self.start_y), (800, self.start_y))
 
     def draw_scale_marks(self, screen, scale):
         self._draw_vertical_scale_marks(screen, scale)
@@ -117,19 +124,27 @@ class CoordinateSystem:
 
     def _draw_vertical_scale_marks(self, screen, scale):
         """Отрисовка вертикальных меток (ось Y)"""
-        for serif, text_value in zip(range(self.start_y, 200, -DisplayConstants.SERIF_SPACING),
-                                     range(0, self.start_y, DisplayConstants.SERIF_SPACING)):
-            pygame.draw.line(screen, 'blue', (self.start_x - 2, serif), (self.start_x + 2, serif))
-            text = text_preset_mini.render('{:<03.2f}'.format(text_value / scale), True, 'black')
-            screen.blit(text, (self.start_x - DisplayConstants.AXIS_OFFSET, serif))
+        for serif, text_value in zip(range(
+                self.start_y, 200, -DisplayConstants.SERIF_SPACING),
+                range(0, self.start_y, DisplayConstants.SERIF_SPACING)):
+            pygame.draw.line(screen, 'blue',
+                             (self.start_x - 2, serif),
+                             (self.start_x + 2, serif))
+            text = text_preset_mini.render(
+                '{:<03.2f}'.format(text_value / scale), True, 'black')
+            screen.blit(text, (self.start_x -
+                               DisplayConstants.AXIS_OFFSET, serif))
 
     def _draw_horizontal_scale_marks(self, screen, scale):
         """Отрисовка горизонтальных меток (ось X)"""
-        for serif, text_value in zip(range(self.start_x, 800, DisplayConstants.SERIF_SPACING),
-                                     range(0, self.start_x + 1000, DisplayConstants.SERIF_SPACING)):
-            text = text_preset_mini.render('{:<03.2f}'.format(text_value / scale), True, 'black')
+        for serif, text_value in zip(range(
+                self.start_x, 800, DisplayConstants.SERIF_SPACING),
+                range(0, self.start_x + 1000, DisplayConstants.SERIF_SPACING)):
+            text = text_preset_mini.render(
+                '{:<03.2f}'.format(text_value / scale), True, 'black')
             screen.blit(text, (serif, self.start_y + 10))
-            pygame.draw.line(screen, 'blue', (serif, self.start_y - 2), (serif, self.start_y + 2))
+            pygame.draw.line(screen, 'blue', (
+                serif, self.start_y - 2), (serif, self.start_y + 2))
 
 
 class TrajectoryRenderer:
@@ -145,11 +160,13 @@ class TrajectoryRenderer:
         for num in range(len(coords) - 1):
             start_point = self._scale_point(coords[num], scale)
             end_point = self._scale_point(coords[num + 1], scale)
-            pygame.draw.line(screen, self.color, start_point, end_point, DisplayConstants.LINE_WIDTH)
+            pygame.draw.line(screen, self.color,
+                             start_point, end_point, DisplayConstants.LINE_WIDTH)
 
     def _scale_point(self, point, scale):
         """Масштабирует точку согласно текущему масштабу"""
-        return (point[0] * scale + self.start_x, point[1] * scale + self.start_y)
+        return (point[0] * scale + self.start_x,
+                point[1] * scale + self.start_y)
 
     def draw_metrics(self, screen, scale, main_stats, s, h):
         self._draw_main_metrics(screen, main_stats, s, h)
@@ -158,10 +175,12 @@ class TrajectoryRenderer:
 
     def _draw_main_metrics(self, screen, main_stats, s, h):
         """Отрисовка основных числовых метрик"""
-        s_text = text_preset.render(str('{:0<1.2f}'.format(s)), True, self.color)
+        s_text = text_preset.render(str(
+            '{:0<1.2f}'.format(s)), True, self.color)
         screen.blit(s_text, main_stats)
 
-        h_text = text_preset.render(str('{:0<1.2f}'.format(h)), True, self.color)
+        h_text = text_preset.render(str(
+            '{:0<1.2f}'.format(h)), True, self.color)
         screen.blit(h_text, (main_stats[0], main_stats[1] + 50))
 
     def _draw_height_marker(self, screen, scale, h):
@@ -172,7 +191,8 @@ class TrajectoryRenderer:
                          (self.start_x + 2, height_y),
                          DisplayConstants.LINE_WIDTH)
 
-        height_text = text_preset_mini.render(str(round(h, 2)), True, self.color)
+        height_text = text_preset_mini.render(str(
+            round(h, 2)), True, self.color)
         screen.blit(height_text, (self.start_x + 10, height_y))
 
     def _draw_distance_marker(self, screen, scale, s):
@@ -197,7 +217,8 @@ class Graphic:
 
     def calculate_and_update_trajectory(self, a_angle):
         """Рассчитывает и обновляет траекторию.
-        Является предсказуемой - всегда возвращает одинаковый результат для одинаковых входных данных"""
+        Является предсказуемой - всегда возвращает
+         одинаковый результат для одинаковых входных данных"""
         try:
             coords, s, h = self.calculator.calculate_trajectory(a_angle)
             return True  # Успешное выполнение
@@ -214,7 +235,8 @@ class Graphic:
     def _draw_trajectory_component(self, screen, scale):
         """Отрисовка траектории"""
         if self.calculator.coords:
-            self.renderer.draw_trajectory(screen, self.calculator.coords, scale)
+            self.renderer.draw_trajectory(screen,
+                                          self.calculator.coords, scale)
 
     def _draw_coordinate_system(self, screen, scale):
         """Отрисовка системы координат"""
@@ -258,7 +280,8 @@ class Menu:
         # Обновляем список цветов на случай изменений
         self.variables = self.color_manager.get_colors()
 
-        if (not self.opened) and check_position(self.x, self.y, self.width, self.height) \
+        if (not self.opened) and check_position(
+                self.x, self.y, self.width, self.height) \
                 and pygame.mouse.get_pressed()[0]:
             self.opened = True
             self.flag = False
@@ -269,7 +292,8 @@ class Menu:
         if self.opened and self.flag:
             for number, choice in enumerate(self.variables):
                 stroke = [self.x, self.y + self.height * number, choice]
-                if check_position(stroke[0], stroke[1], self.width, self.height):
+                if check_position(stroke[0],
+                                  stroke[1], self.width, self.height):
                     if pygame.mouse.get_pressed()[0]:
                         self.opened = False
                         self.choice = number
@@ -279,7 +303,8 @@ class Menu:
         self.variables = self.color_manager.get_colors()
 
         if self.opened is False:
-            pygame.draw.rect(screen, interface, (self.x, self.y, self.width, self.height))
+            pygame.draw.rect(screen, interface, (
+                self.x, self.y, self.width, self.height))
             text = text_preset.render('Menu', True, text_color)
             screen.blit(text, (self.x + 5, self.y + 5))
 
@@ -287,14 +312,17 @@ class Menu:
             for number, choice in enumerate(self.variables):
                 stroke = [self.x, self.y + self.height * number, choice]
 
-                pygame.draw.rect(screen, interface, (stroke[0], stroke[1], self.width, self.height))
-                pygame.draw.rect(screen, choice, (stroke[0] + 200, stroke[1] + 10, 22, 22))
+                pygame.draw.rect(screen, interface, (
+                    stroke[0], stroke[1], self.width, self.height))
+                pygame.draw.rect(screen, choice, (
+                    stroke[0] + 200, stroke[1] + 10, 22, 22))
                 text = text_preset.render(choice.capitalize(), True, choice)
                 screen.blit(text, (self.x + 12, stroke[1] + 5))
 
 
 class Slider:
-    def __init__(self, coord, lenght, max_value, start_value, minimal_value):
+    def __init__(self, coord, lenght, max_value,
+                 start_value, minimal_value):
 
         self.minimal_value = minimal_value
         self.max_value = max_value
@@ -313,19 +341,23 @@ class Slider:
     def slide(self, value=None):
 
         if value is not None:
-            self.s_x = (self.lenght * value) / self.max_value + self.x
+            self.s_x = ((self.lenght * value) /
+                        self.max_value + self.x)
             self.value = value
 
         if not self.flag:
-            if pygame.mouse.get_pressed()[0] and self.s_x < pygame.mouse.get_pos()[0] < self.s_x + self.s_width \
-                    and self.s_y < pygame.mouse.get_pos()[1] < self.s_y + self.s_height:
+            if (pygame.mouse.get_pressed()[0] and self.s_x <
+                    pygame.mouse.get_pos()[0] < self.s_x + self.s_width \
+                    and self.s_y < pygame.mouse.get_pos()[1] <
+                    self.s_y + self.s_height):
                 self.new_posx = pygame.mouse.get_pos()[0] + 0
                 new_posy = pygame.mouse.get_pos()[1]
                 self.flag = True
 
         elif self.flag is True:
 
-            self.s_x = self.s_x + (pygame.mouse.get_pos()[0] - self.new_posx)
+            self.s_x = self.s_x + (pygame.mouse.get_pos()[0] -
+                                   self.new_posx)
 
             if self.s_x > self.x + self.lenght:
                 self.s_x = self.x + self.lenght
@@ -333,7 +365,8 @@ class Slider:
                 self.s_x = self.x
 
             self.value = (self.s_x - self.x) / (
-                    self.lenght / (self.max_value - self.minimal_value)) + self.minimal_value
+                    self.lenght / (self.max_value -
+                                   self.minimal_value)) + self.minimal_value
             self.new_posx = pygame.mouse.get_pos()[0]
             if not pygame.mouse.get_pressed()[0]:
                 self.flag = False
@@ -342,15 +375,21 @@ class Slider:
         return self.value
 
     def draw(self, screen):
-        pygame.draw.line(screen, 'black', (self.x, self.y), (self.x + self.lenght, self.y), DisplayConstants.LINE_WIDTH)
-        pygame.draw.rect(screen, 'white', ((self.s_x, self.s_y), (self.s_width, self.s_height)))
+        pygame.draw.line(screen, 'black', (
+            self.x, self.y), (self.x + self.lenght, self.y),
+                         DisplayConstants.LINE_WIDTH)
+        pygame.draw.rect(screen, 'white', (
+            (self.s_x, self.s_y), (self.s_width,
+                                   self.s_height)))
 
 
 # Создаем графики с использованием менеджера цветов
-angle_slider = Slider([50, DisplayConstants.AXIS_OFFSET], 700, (math.pi / 2), 0, 0)
+angle_slider = Slider([50, DisplayConstants.AXIS_OFFSET],
+                      700, (math.pi / 2), 0, 0)
 graphics = []
 for color in color_manager.get_colors():
-    graphics.append(Graphic((DisplayConstants.AXIS_OFFSET, 780), int(input('Введите начальную скорость')), color))
+    graphics.append(Graphic((DisplayConstants.AXIS_OFFSET, 780),
+                            int(input('Введите начальную скорость')), color))
 scale_slider = Slider([50, 50], 700, 1000, 1500, 1)
 color_menu = Menu((700, 200), color_manager, 250, 40)
 
