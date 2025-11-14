@@ -159,7 +159,7 @@ class TrajectoryRenderer:
 
 
 class Graphic:
-    def __init__(self, start_pos, start_speed, time, color):
+    def __init__(self, start_pos, start_speed, color):
         self.calculator = TrajectoryCalculator(start_speed)
         self.coord_system = CoordinateSystem(start_pos[0], start_pos[1])
         self.renderer = TrajectoryRenderer(start_pos, color)
