@@ -1,5 +1,10 @@
+# work_files.py
 import json
 import sys
+from logging_config import get_module_logger
+
+# Получаем логгер для этого модуля
+logger = get_module_logger('work_files')
 
 
 def read_json_file(filename: str) -> dict:
@@ -9,13 +14,19 @@ def read_json_file(filename: str) -> dict:
     :return: Данные из файла как словарь
     """
     try:
+        logger.info(f"Начинаю чтение JSON файла: {filename}")
         with open(filename, 'r', encoding='utf-8') as file:
-            return json.load(file)
+            data = json.load(file)
+            logger.info(f"JSON файл '{filename}' успешно прочитан. Ключи: {list(data.keys())}")
+            return data
     except FileNotFoundError:
-        print(f"JSON файл '{filename}' не найден.")
+        logger.error(f"JSON файл '{filename}' не найден.")
         sys.exit(1)
-    except json.JSONDecodeError:
-        print(f"Ошибка формата JSON в файле '{filename}'")
+    except json.JSONDecodeError as e:
+        logger.error(f"Ошибка формата JSON в файле '{filename}': {e}")
+        sys.exit(1)
+    except Exception as e:
+        logger.error(f"Неизвестная ошибка при чтении JSON файла '{filename}': {e}")
         sys.exit(1)
 
 
@@ -26,17 +37,19 @@ def read_file(filename: str) -> str:
     :return: Последовательность
     """
     try:
-
+        logger.info(f"Начинаю чтение файла: {filename}")
         with open(filename, 'r', encoding='utf-8') as file:
-            return file.read()
+            content = file.read()
+            logger.info(f"Файл '{filename}' успешно прочитан. Длина: {len(content)} символов")
+            return content
     except FileNotFoundError:
-        print(f"Файл '{filename}' не найден.")
+        logger.error(f"Файл '{filename}' не найден.")
         sys.exit(1)
     except IOError as e:
-        print(f"Ошибка чтения файла '{filename}': {e}")
+        logger.error(f"Ошибка чтения файла '{filename}': {e}")
         sys.exit(1)
     except Exception as e:
-        print(f"Неизвестная ошибка при чтении файла '{filename}': {e}")
+        logger.error(f"Неизвестная ошибка при чтении файла '{filename}': {e}")
         sys.exit(1)
 
 
@@ -47,8 +60,14 @@ def write_file(filename: str, text: str) -> None:
     :param content: Текст для записи
     """
     try:
+        logger.info(f"Начинаю запись в файл: {filename}")
+        logger.debug(f"Длина записываемого текста: {len(text)} символов")
         with open(filename, 'w', encoding='utf-8') as file:
             file.write(text)
+        logger.info(f"Файл '{filename}' успешно записан")
     except IOError as e:
-        print(f"Ошибка записи в файл '{filename}': {e}")
+        logger.error(f"Ошибка записи в файл '{filename}': {e}")
+        sys.exit(1)
+    except Exception as e:
+        logger.error(f"Неизвестная ошибка при записи файла '{filename}': {e}")
         sys.exit(1)
